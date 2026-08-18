@@ -22,7 +22,7 @@ jobs:
           cache: true
           
       - run: flutter pub get
-      
+      - run: flutter analyze --suggestions
       - run: flutter build apk --release
       
       - name: Upload APK
