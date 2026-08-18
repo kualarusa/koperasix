@@ -1,3 +1,8 @@
+plugins {
+    id("com.android.application")
+    id("dev.flutter.flutter-gradle-plugin")
+}
+
 android {
     namespace = "com.kpulampung.koperasi_anggota"
     compileSdk = flutter.compileSdkVersion
@@ -16,7 +21,6 @@ android {
         versionName = flutter.versionName
     }
 
-    // KONFIGURASI KUNCI UNTUK KOTLIN DSL (.kts)
     signingConfigs {
         create("release") {
             storeFile = file("key.jks")
@@ -31,4 +35,14 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
+flutter {
+    source = "../.."
 }
