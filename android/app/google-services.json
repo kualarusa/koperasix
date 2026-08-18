@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "170708688450",
+    "firebase_url": "https://peraturandankeputusankpu.firebaseio.com",
+    "project_id": "peraturandankeputusankpu",
+    "storage_bucket": "peraturandankeputusankpu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:170708688450:android:d8fbf7f9c60a80c42cd7db",
+        "android_client_info": {
+          "package_name": "com.kpulampung.koperasi_anggota"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCa_bn-TTQPdAtwbuK4EhSd3iHacYosYhQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:170708688450:android:f245d3e6e8efa2a9",
+        "android_client_info": {
+          "package_name": "com.technoindonesia.kpu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCa_bn-TTQPdAtwbuK4EhSd3iHacYosYhQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
