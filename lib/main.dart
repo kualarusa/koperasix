@@ -9,6 +9,154 @@ void main() {
   runApp(const MyApp());
 }
 
+// ============================================================
+// FUNGSI FORMAT ANGKA INDONESIA
+// ============================================================
+
+String formatAngkaIndonesia(dynamic value) {
+  if (value == null) {
+    return '0';
+  }
+
+  double number;
+
+  try {
+    if (value is num) {
+      number = value.toDouble();
+    } else {
+      String raw = value.toString().trim();
+
+      if (raw.isEmpty) {
+        return '0';
+      }
+
+      // Jika format dari database misalnya:
+      // 141032.00
+      // maka langsung diproses.
+      //
+      // Jika suatu saat API mengirim:
+      // 141.032,00
+      // maka titik dianggap pemisah ribuan
+      // dan koma sebagai desimal.
+      if (raw.contains(',') && raw.contains('.')) {
+        raw = raw.replaceAll('.', '').replaceAll(',', '.');
+      } else if (raw.contains(',')) {
+        raw = raw.replaceAll(',', '.');
+      }
+
+      number = double.parse(raw);
+    }
+  } catch (_) {
+    return value.toString();
+  }
+
+  // Untuk angka bulat
+  if (number == number.roundToDouble()) {
+    String result = number.toInt().toString();
+
+    bool isNegative = result.startsWith('-');
+
+    if (isNegative) {
+      result = result.substring(1);
+    }
+
+    // Tambahkan titik setiap tiga digit
+    result = result.replaceAllMapped(
+      RegExp(r'\B(?=(\d{3})+(?!\d))'),
+      (match) => '.',
+    );
+
+    return isNegative ? '-$result' : result;
+  }
+
+  // Untuk angka yang memiliki desimal
+  String result = number.toStringAsFixed(2);
+
+  List<String> parts = result.split('.');
+
+  String integerPart = parts[0];
+  String decimalPart = parts[1];
+
+  bool isNegative = integerPart.startsWith('-');
+
+  if (isNegative) {
+    integerPart = integerPart.substring(1);
+  }
+
+  integerPart = integerPart.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (match) => '.',
+  );
+
+  return '${isNegative ? '-' : ''}$integerPart,$decimalPart';
+}
+
+// ============================================================
+// FORMAT RUPIAH
+// ============================================================
+
+String formatRupiah(dynamic value) {
+  return 'Rp${formatAngkaIndonesia(value)},00';
+}
+
+// ============================================================
+// FORMAT RUPIAH DENGAN DESIMAL YANG BENAR
+// ============================================================
+
+String formatRupiahIndonesia(dynamic value) {
+  if (value == null) {
+    return 'Rp0,00';
+  }
+
+  double number;
+
+  try {
+    if (value is num) {
+      number = value.toDouble();
+    } else {
+      String raw = value.toString().trim();
+
+      if (raw.isEmpty) {
+        return 'Rp0,00';
+      }
+
+      if (raw.contains(',') && raw.contains('.')) {
+        raw = raw.replaceAll('.', '').replaceAll(',', '.');
+      } else if (raw.contains(',')) {
+        raw = raw.replaceAll(',', '.');
+      }
+
+      number = double.parse(raw);
+    }
+  } catch (_) {
+    return 'Rp${value.toString()}';
+  }
+
+  bool isNegative = number < 0;
+
+  if (isNegative) {
+    number = number.abs();
+  }
+
+  String fixed = number.toStringAsFixed(2);
+
+  List<String> parts = fixed.split('.');
+
+  String integerPart = parts[0];
+  String decimalPart = parts[1];
+
+  integerPart = integerPart.replaceAllMapped(
+    RegExp(r'\B(?=(\d{3})+(?!\d))'),
+    (match) => '.',
+  );
+
+  return '${isNegative ? '-Rp' : 'Rp'}$integerPart,$decimalPart';
+}
+
+// ============================================================
+// 1. APLIKASI UTAMA
+// ============================================================
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -18,7 +166,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Koperasi Anggota',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.indigo,
+        ),
         useMaterial3: true,
       ),
       home: const SplashScreen(),
@@ -26,9 +176,10 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// ==========================================
-// 1. SPLASH SCREEN (Desain Full Gambar)
-// ==========================================
+// ============================================================
+// 2. SPLASH SCREEN
+// ============================================================
+
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -40,10 +191,15 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+
     Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        MaterialPageRoute(
+          builder: (context) => const LoginScreen(),
+        ),
       );
     });
   }
@@ -65,9 +221,10 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 }
 
-// ==========================================
-// 2. HALAMAN LOGIN (Menggunakan Google Sign-In Button)
-// ==========================================
+// ============================================================
+// 3. HALAMAN LOGIN
+// ============================================================
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -77,18 +234,25 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
-  
-  // Inisialisasi Google Sign In
+
+  // Google Sign In
+  // JANGAN DIUBAH karena konfigurasi saat ini sudah berhasil.
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   // Endpoint API backend untuk login Google
-  final String baseUrl = 'http://202.179.185.94/koperasi/api/google_login';
+  final String baseUrl =
+      'http://202.179.185.94/koperasi/api/google_login';
 
-  void showSnackBar(String message, {bool isError = true}) {
+  void showSnackBar(
+    String message, {
+    bool isError = true,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
+        backgroundColor: isError
+            ? Colors.red.shade700
+            : Colors.green.shade700,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -98,52 +262,76 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => isLoading = true);
 
     try {
-      // Memunculkan pop-up pilihan akun Google yang ada di HP pengguna
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
+      // Memunculkan pilihan akun Google
+      final GoogleSignInAccount? googleUser =
+          await _googleSignIn.signIn();
+
       if (googleUser == null) {
-        // Pengguna membatalkan proses pemilihan akun
         setState(() => isLoading = false);
         return;
       }
 
       String email = googleUser.email;
 
-      // Mengirim email yang dipilih ke API backend menggunakan metode POST
-      final response = await http.post(
-        Uri.parse(baseUrl),
-        body: {'email': email},
-      ).timeout(const Duration(seconds: 10));
+      // Mengirim email ke API backend
+      final response = await http
+          .post(
+            Uri.parse(baseUrl),
+            body: {
+              'email': email,
+            },
+          )
+          .timeout(
+            const Duration(seconds: 10),
+          );
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
+
         if (jsonResponse['status'] == true) {
-          // Mengambil nomor anggota dari respons data untuk dikirim ke dashboard
-          final String noAnggota = jsonResponse['data']['no_anggota'] ?? '';
-          
+          final String noAnggota =
+              jsonResponse['data']['no_anggota'] ?? '';
+
           if (!mounted) return;
+
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => MemberDashboard(noAnggota: noAnggota),
+              builder: (context) => MemberDashboard(
+                noAnggota: noAnggota,
+              ),
             ),
           );
         } else {
-          // Jika email tidak terdaftar di database koperasi, lakukan signOut juga dari Google
           await _googleSignIn.signOut();
-          showSnackBar(jsonResponse['message'] ?? 'Email tidak terdaftar sebagai anggota.');
+
+          showSnackBar(
+            jsonResponse['message'] ??
+                'Email tidak terdaftar sebagai anggota.',
+          );
         }
       } else {
-        showSnackBar("Terjadi gangguan pada server (Error ${response.statusCode})");
+        showSnackBar(
+          'Terjadi gangguan pada server '
+          '(Error ${response.statusCode})',
+        );
       }
     } on SocketException {
-      showSnackBar("Tidak ada koneksi internet. Periksa jaringan Anda.");
+      showSnackBar(
+        'Tidak ada koneksi internet. Periksa jaringan Anda.',
+      );
     } on TimeoutException {
-      showSnackBar("Koneksi internet lambat / server lama merespon.");
+      showSnackBar(
+        'Koneksi internet lambat / server lama merespon.',
+      );
     } catch (e) {
-      showSnackBar("Terjadi kesalahan tak terduga: $e");
+      showSnackBar(
+        'Terjadi kesalahan tak terduga: $e',
+      );
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
     }
   }
 
@@ -156,25 +344,45 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(24.0),
           child: Card(
             elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.lock_person_rounded, size: 70, color: Colors.indigo),
+                  const Icon(
+                    Icons.lock_person_rounded,
+                    size: 70,
+                    color: Colors.indigo,
+                  ),
+
                   const SizedBox(height: 16),
+
                   const Text(
                     'Login Anggota Koperasi',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo,
+                    ),
                   ),
+
                   const SizedBox(height: 8),
+
                   const Text(
-                    'Silakan masuk menggunakan akun Google yang terdaftar di perangkat Anda', 
+                    'Silakan masuk menggunakan akun Google '
+                    'yang terdaftar di perangkat Anda',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey, fontSize: 13),
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 13,
+                    ),
                   ),
+
                   const SizedBox(height: 32),
+
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -185,26 +393,41 @@ class _LoginScreenState extends State<LoginScreen> {
                         elevation: 2,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
-                          side: const BorderSide(color: Colors.grey, width: 0.5),
+                          side: const BorderSide(
+                            color: Colors.grey,
+                            width: 0.5,
+                          ),
                         ),
                       ),
-                      onPressed: isLoading ? null : handleGoogleLogin,
-                      icon: isLoading 
-                        ? const SizedBox.shrink()
-                        : Image.network(
-                          'https://www.gstatic.com/images/branding/product/1x/googleg_48dp.png',
-                          height: 24,
-                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.g_mobiledata, size: 28),
-                        ),
+                      onPressed:
+                          isLoading ? null : handleGoogleLogin,
+                      icon: isLoading
+                          ? const SizedBox.shrink()
+                          : Image.network(
+                              'https://www.gstatic.com/images/branding/'
+                              'product/1x/googleg_48dp.png',
+                              height: 24,
+                              errorBuilder:
+                                  (context, error, stackTrace) =>
+                                      const Icon(
+                                Icons.g_mobiledata,
+                                size: 28,
+                              ),
+                            ),
                       label: isLoading
                           ? const SizedBox(
-                              width: 20, 
-                              height: 20, 
-                              child: CircularProgressIndicator(strokeWidth: 2)
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                              ),
                             )
                           : const Text(
-                              'Masuk dengan Google', 
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              'Masuk dengan Google',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15,
+                              ),
                             ),
                     ),
                   ),
@@ -218,23 +441,37 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ==========================================
-// 3. DASHBOARD UTAMA ANGGOTA (Dengan Sliver Optimization)
-// ==========================================
+// ============================================================
+// 4. DASHBOARD ANGGOTA
+// ============================================================
+
 class MemberDashboard extends StatefulWidget {
   final String noAnggota;
-  const MemberDashboard({super.key, required this.noAnggota});
+
+  const MemberDashboard({
+    super.key,
+    required this.noAnggota,
+  });
 
   @override
-  State<MemberDashboard> createState() => _MemberDashboardState();
+  State<MemberDashboard> createState() =>
+      _MemberDashboardState();
 }
 
-class _MemberDashboardState extends State<MemberDashboard> {
+class _MemberDashboardState
+    extends State<MemberDashboard> {
   Map<String, dynamic>? memberData;
+
   bool isLoading = true;
+
   String errorMessage = '';
 
-  final String baseUrl = 'http://202.179.185.94/koperasi/api/get_member';
+  final String baseUrl =
+      'http://202.179.185.94/koperasi/api/get_member';
+
+  // ==========================================================
+  // AMBIL DATA ANGGOTA
+  // ==========================================================
 
   Future<void> fetchMemberData() async {
     setState(() {
@@ -243,12 +480,19 @@ class _MemberDashboardState extends State<MemberDashboard> {
     });
 
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl?no_anggota=${widget.noAnggota}'),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(
+            Uri.parse(
+              '$baseUrl?no_anggota=${widget.noAnggota}',
+            ),
+          )
+          .timeout(
+            const Duration(seconds: 10),
+          );
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
+
         if (jsonResponse['status'] == true) {
           setState(() {
             memberData = jsonResponse['data'];
@@ -256,173 +500,492 @@ class _MemberDashboardState extends State<MemberDashboard> {
           });
         } else {
           setState(() {
-            errorMessage = jsonResponse['message'] ?? 'Data tidak ditemukan';
+            errorMessage =
+                jsonResponse['message'] ??
+                    'Data tidak ditemukan';
+
             isLoading = false;
           });
         }
       } else {
         setState(() {
-          errorMessage = 'Gagal terhubung ke server';
+          errorMessage =
+              'Gagal terhubung ke server';
+
           isLoading = false;
         });
       }
     } on SocketException {
       setState(() {
-        errorMessage = 'Tidak ada koneksi internet.';
+        errorMessage =
+            'Tidak ada koneksi internet.';
+
         isLoading = false;
       });
     } on TimeoutException {
       setState(() {
-        errorMessage = 'Koneksi terlalu lama / timeout.';
+        errorMessage =
+            'Koneksi terlalu lama / timeout.';
+
         isLoading = false;
       });
     } catch (e) {
       setState(() {
-        errorMessage = 'Terjadi kesalahan sistem.';
+        errorMessage =
+            'Terjadi kesalahan sistem.';
+
         isLoading = false;
       });
     }
   }
 
+  // ==========================================================
+  // INIT
+  // ==========================================================
+
   @override
   void initState() {
     super.initState();
+
     fetchMemberData();
   }
 
+  // ==========================================================
+  // LOGOUT
+  // ==========================================================
+
   void logout() async {
-    // Logout juga dari sesi Google Sign-in lokal perangkat
     try {
       await GoogleSignIn().signOut();
     } catch (_) {}
 
     if (!mounted) return;
+
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+      ),
     );
   }
 
+  // ==========================================================
+  // DASHBOARD
+  // ==========================================================
+
   @override
   Widget build(BuildContext context) {
-    final List riwayatBelanja = memberData?['riwayat_belanja'] ?? [];
+    final List riwayatBelanja =
+        memberData?['riwayat_belanja'] ?? [];
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard Anggota', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text(
+          'Dashboard Anggota',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: Colors.indigo,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: const Icon(
+              Icons.refresh,
+              color: Colors.white,
+            ),
             tooltip: 'Refresh Data',
             onPressed: fetchMemberData,
           ),
+
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(
+              Icons.logout,
+              color: Colors.white,
+            ),
             tooltip: 'Keluar',
             onPressed: logout,
-          )
+          ),
         ],
       ),
+
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(),
+            )
           : errorMessage.isNotEmpty
-              ? Center(child: Text(errorMessage, style: const TextStyle(color: Colors.red)))
+              ? Center(
+                  child: Text(
+                    errorMessage,
+                    style: const TextStyle(
+                      color: Colors.red,
+                    ),
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: fetchMemberData,
+
                   child: CustomScrollView(
                     slivers: [
+                      // ==================================================
+                      // BAGIAN ATAS DASHBOARD
+                      // ==================================================
+
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: const EdgeInsets.fromLTRB(
+                            8.0,
+                            8.0,
+                            8.0,
+                            16.0,
+                          ),
+
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                                CrossAxisAlignment.start,
+
                             children: [
+                              // ==================================================
+                              // BARCODE ANGGOTA
+                              // ==================================================
+
                               Card(
-                                elevation: 3,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                elevation: 4,
+
+                                shape:
+                                    RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(
+                                    16,
+                                  ),
+                                ),
+
                                 child: Padding(
-                                  padding: const EdgeInsets.all(20.0),
+                                  padding:
+                                      const EdgeInsets.fromLTRB(
+                                    12.0,
+                                    18.0,
+                                    12.0,
+                                    20.0,
+                                  ),
+
                                   child: Column(
                                     children: [
-                                      const Text('Barcode Anggota (Scan di Kasir)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey)),
-                                      const SizedBox(height: 15),
-                                      SizedBox(
-                                        height: 60,
-                                        child: Image.network(
-                                          'https://bwipjs-api.metafloor.com/?bcid=code128&text=${memberData!['no_anggota']}&scale=2&height=12',
-                                          fit: BoxFit.contain,
-                                          errorBuilder: (context, error, stackTrace) => const Text('Gagal memuat barcode', style: TextStyle(color: Colors.red)),
+                                      const Text(
+                                        'BARCODE ANGGOTA',
+                                        style: TextStyle(
+                                          fontWeight:
+                                              FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Colors.grey,
+                                          letterSpacing: 0.5,
                                         ),
                                       ),
-                                      const SizedBox(height: 10),
-                                      Text(memberData!['no_anggota'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-                                      Text(memberData!['nama'], style: const TextStyle(fontSize: 14, color: Colors.indigo, fontWeight: FontWeight.w600)),
+
+                                      const SizedBox(
+                                        height: 14,
+                                      ),
+
+                                      // ==================================================
+                                      // BARCODE BESAR
+                                      // ==================================================
+
+                                      SizedBox(
+                                        width:
+                                            double.infinity,
+                                        height: 105,
+
+                                        child: Image.network(
+                                          'https://bwipjs-api.metafloor.com/'
+                                          '?bcid=code128'
+                                          '&text=${memberData!['no_anggota']}'
+                                          '&scale=3'
+                                          '&height=18',
+
+                                          fit: BoxFit.fill,
+
+                                          errorBuilder:
+                                              (
+                                            context,
+                                            error,
+                                            stackTrace,
+                                          ) {
+                                            return const Center(
+                                              child: Text(
+                                                'Gagal memuat barcode',
+                                                style:
+                                                    TextStyle(
+                                                  color:
+                                                      Colors.red,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+
+                                      const SizedBox(
+                                        height: 14,
+                                      ),
+
+                                      // ==================================================
+                                      // NOMOR ANGGOTA
+                                      // ==================================================
+
+                                      Text(
+                                        memberData![
+                                            'no_anggota'],
+                                        style:
+                                            const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight:
+                                              FontWeight.bold,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+
+                                      const SizedBox(
+                                        height: 4,
+                                      ),
+
+                                      // ==================================================
+                                      // NAMA ANGGOTA
+                                      // ==================================================
+
+                                      Text(
+                                        memberData!['nama'],
+                                        textAlign:
+                                            TextAlign.center,
+                                        style:
+                                            const TextStyle(
+                                          fontSize: 17,
+                                          color:
+                                              Colors.indigo,
+                                          fontWeight:
+                                              FontWeight.w600,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
                               ),
+
                               const SizedBox(height: 20),
+
+                              // ==================================================
+                              // TOTAL SALDO POIN
+                              // ==================================================
+
                               Card(
                                 elevation: 3,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                color: Colors.amber.shade50,
+
+                                shape:
+                                    RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(
+                                    12,
+                                  ),
+                                ),
+
+                                color:
+                                    Colors.amber.shade50,
+
                                 child: Padding(
-                                  padding: const EdgeInsets.all(20.0),
+                                  padding:
+                                      const EdgeInsets.all(
+                                    20.0,
+                                  ),
+
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment
+                                            .spaceBetween,
+
                                     children: [
                                       Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment
+                                                .start,
+
                                         children: [
-                                          const Text('Total Saldo Poin', style: TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600)),
-                                          const SizedBox(height: 5),
-                                          Text('${memberData!['saldo_poin']} Poin', style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.orangeAccent)),
+                                          const Text(
+                                            'Total Saldo Poin',
+                                            style:
+                                                TextStyle(
+                                              fontSize: 13,
+                                              color: Colors
+                                                  .black54,
+                                              fontWeight:
+                                                  FontWeight
+                                                      .w600,
+                                            ),
+                                          ),
+
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+
+                                          Text(
+                                            '${formatAngkaIndonesia(memberData!['saldo_poin'])} Poin',
+                                            style:
+                                                const TextStyle(
+                                              fontSize: 26,
+                                              fontWeight:
+                                                  FontWeight
+                                                      .bold,
+                                              color: Colors
+                                                  .orangeAccent,
+                                            ),
+                                          ),
                                         ],
                                       ),
+
                                       CircleAvatar(
-                                        backgroundColor: Colors.orange,
+                                        backgroundColor:
+                                            Colors.orange,
+
                                         child: IconButton(
-                                          icon: const Icon(Icons.refresh, color: Colors.white),
-                                          onPressed: fetchMemberData,
-                                          tooltip: 'Refresh Poin',
+                                          icon: const Icon(
+                                            Icons.refresh,
+                                            color:
+                                                Colors.white,
+                                          ),
+                                          onPressed:
+                                              fetchMemberData,
+                                          tooltip:
+                                              'Refresh Poin',
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
                               ),
+
                               const SizedBox(height: 20),
-                              const Text('Informasi Iuran Anggota', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 10),
+
+                              // ==================================================
+                              // INFORMASI IURAN
+                              // ==================================================
+
+                              const Text(
+                                'Informasi Iuran Anggota',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight:
+                                      FontWeight.bold,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                height: 10,
+                              ),
+
                               Row(
                                 children: [
+                                  // ==================================================
+                                  // IURAN POKOK
+                                  // ==================================================
+
                                   Expanded(
                                     child: Card(
                                       child: Padding(
-                                        padding: const EdgeInsets.all(16.0),
+                                        padding:
+                                            const EdgeInsets
+                                                .all(
+                                          16.0,
+                                        ),
+
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment
+                                                  .start,
+
                                           children: [
-                                            const Text('Iuran Pokok', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                                            const SizedBox(height: 8),
-                                            Text('Rp ${memberData!['total_iuran_pokok']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                            const Text(
+                                              'Iuran Pokok',
+                                              style:
+                                                  TextStyle(
+                                                color:
+                                                    Colors.grey,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+
+                                            const SizedBox(
+                                              height: 8,
+                                            ),
+
+                                            Text(
+                                              formatRupiahIndonesia(
+                                                memberData![
+                                                    'total_iuran_pokok'],
+                                              ),
+
+                                              style:
+                                                  const TextStyle(
+                                                fontWeight:
+                                                    FontWeight
+                                                        .bold,
+                                                fontSize: 15,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
+
+                                  const SizedBox(
+                                    width: 10,
+                                  ),
+
+                                  // ==================================================
+                                  // IURAN WAJIB
+                                  // ==================================================
+
                                   Expanded(
                                     child: Card(
                                       child: Padding(
-                                        padding: const EdgeInsets.all(16.0),
+                                        padding:
+                                            const EdgeInsets
+                                                .all(
+                                          16.0,
+                                        ),
+
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment
+                                                  .start,
+
                                           children: [
-                                            const Text('Iuran Wajib', style: TextStyle(color: Colors.grey, fontSize: 12)),
-                                            const SizedBox(height: 8),
-                                            Text('Rp ${memberData!['total_iuran_wajib']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                            const Text(
+                                              'Iuran Wajib',
+                                              style:
+                                                  TextStyle(
+                                                color:
+                                                    Colors.grey,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+
+                                            const SizedBox(
+                                              height: 8,
+                                            ),
+
+                                            Text(
+                                              formatRupiahIndonesia(
+                                                memberData![
+                                                    'total_iuran_wajib'],
+                                              ),
+
+                                              style:
+                                                  const TextStyle(
+                                                fontWeight:
+                                                    FontWeight
+                                                        .bold,
+                                                fontSize: 15,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -430,55 +993,196 @@ class _MemberDashboardState extends State<MemberDashboard> {
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 25),
-                              const Text('Riwayat Pembelian', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 10),
+
+                              const SizedBox(
+                                height: 25,
+                              ),
+
+                              // ==================================================
+                              // RIWAYAT PEMBELIAN
+                              // ==================================================
+
+                              const Text(
+                                'Riwayat Pembelian',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight:
+                                      FontWeight.bold,
+                                ),
+                              ),
+
+                              const SizedBox(
+                                height: 10,
+                              ),
                             ],
                           ),
                         ),
                       ),
+
+                      // ==================================================
+                      // JIKA TIDAK ADA RIWAYAT
+                      // ==================================================
+
                       riwayatBelanja.isEmpty
                           ? const SliverToBoxAdapter(
                               child: Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                                padding:
+                                    EdgeInsets.symmetric(
+                                  horizontal: 16.0,
+                                ),
+
                                 child: Card(
                                   child: Padding(
-                                    padding: EdgeInsets.all(20.0),
+                                    padding:
+                                        EdgeInsets.all(
+                                      20.0,
+                                    ),
+
                                     child: Center(
-                                      child: Text('Belum ada riwayat transaksi belanja.', style: TextStyle(color: Colors.grey)),
+                                      child: Text(
+                                        'Belum ada riwayat transaksi belanja.',
+                                        style: TextStyle(
+                                          color:
+                                              Colors.grey,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             )
+
+                          // ==================================================
+                          // DAFTAR RIWAYAT PEMBELIAN
+                          // ==================================================
+
                           : SliverList(
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  final belanja = riwayatBelanja[index];
+                              delegate:
+                                  SliverChildBuilderDelegate(
+                                (
+                                  context,
+                                  index,
+                                ) {
+                                  final belanja =
+                                      riwayatBelanja[
+                                          index];
+
                                   return Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                                    padding:
+                                        const EdgeInsets
+                                            .symmetric(
+                                      horizontal: 16.0,
+                                      vertical: 4.0,
+                                    ),
+
                                     child: Card(
                                       child: ListTile(
-                                        leading: const CircleAvatar(
-                                          backgroundColor: Colors.indigo,
-                                          child: Icon(Icons.shopping_bag, color: Colors.white, size: 18),
+                                        // ==================================================
+                                        // ICON
+                                        // ==================================================
+
+                                        leading:
+                                            const CircleAvatar(
+                                          backgroundColor:
+                                              Colors.indigo,
+
+                                          child: Icon(
+                                            Icons
+                                                .shopping_bag,
+                                            color:
+                                                Colors.white,
+                                            size: 18,
+                                          ),
                                         ),
-                                        title: Text('Rp ${belanja['nominal']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                        subtitle: Text(belanja['created_at'], style: const TextStyle(fontSize: 12)),
-                                        trailing: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                          decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
-                                          child: Text('+${belanja['poin']} Poin', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+
+                                        // ==================================================
+                                        // NOMINAL BELANJA
+                                        // ==================================================
+
+                                        title: Text(
+                                          formatRupiahIndonesia(
+                                            belanja[
+                                                'nominal'],
+                                          ),
+
+                                          style:
+                                              const TextStyle(
+                                            fontWeight:
+                                                FontWeight
+                                                    .bold,
+                                          ),
+                                        ),
+
+                                        // ==================================================
+                                        // TANGGAL
+                                        // ==================================================
+
+                                        subtitle: Text(
+                                          belanja[
+                                              'created_at'],
+                                          style:
+                                              const TextStyle(
+                                            fontSize: 12,
+                                          ),
+                                        ),
+
+                                        // ==================================================
+                                        // POIN
+                                        // ==================================================
+
+                                        trailing:
+                                            Container(
+                                          padding:
+                                              const EdgeInsets
+                                                  .symmetric(
+                                            horizontal: 10,
+                                            vertical: 5,
+                                          ),
+
+                                          decoration:
+                                              BoxDecoration(
+                                            color: Colors
+                                                .green
+                                                .shade50,
+
+                                            borderRadius:
+                                                BorderRadius
+                                                    .circular(
+                                              8,
+                                            ),
+                                          ),
+
+                                          child: Text(
+                                            '+${formatAngkaIndonesia(belanja['poin'])} Poin',
+
+                                            style:
+                                                const TextStyle(
+                                              color:
+                                                  Colors.green,
+                                              fontWeight:
+                                                  FontWeight
+                                                      .bold,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
                                   );
                                 },
-                                childCount: riwayatBelanja.length,
+
+                                childCount:
+                                    riwayatBelanja.length,
                               ),
                             ),
+
+                      // ==================================================
+                      // SPASI BAWAH
+                      // ==================================================
+
                       const SliverToBoxAdapter(
-                        child: SizedBox(height: 20),
+                        child: SizedBox(
+                          height: 20,
+                        ),
                       ),
                     ],
                   ),
