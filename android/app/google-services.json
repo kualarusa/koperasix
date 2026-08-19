@@ -13,7 +13,16 @@
           "package_name": "com.kpulampung.koperasi_anggota"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "170708688450-faqur0g8rlcsu75626thommiocbneu30.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kpulampung.koperasi_anggota",
+            "certificate_hash": "4b8acd54219dfa02a2be603e64fbe20759157d76"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCa_bn-TTQPdAtwbuK4EhSd3iHacYosYhQ"
@@ -21,7 +30,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "170708688450-qjahsifg5psndhhv2uujc095eoq3l2g3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     },
@@ -40,7 +54,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "170708688450-qjahsifg5psndhhv2uujc095eoq3l2g3.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

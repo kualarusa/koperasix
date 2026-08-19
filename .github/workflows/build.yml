@@ -2,7 +2,7 @@ name: Build Flutter APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -15,23 +15,24 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: "zulu"
+          java-version: "17"
 
-      # Flutter harus sama dengan komputer lokal
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.0'
+          flutter-version: "3.47.0"
           cache: true
 
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Generate application icons
+        run: dart run flutter_launcher_icons
+
       - name: Check Flutter / Gradle compatibility
         run: flutter analyze --suggestions
 
-      # Membuat kembali key.jks dari GitHub Secret
       - name: Prepare Android signing key
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
@@ -39,7 +40,6 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/key.jks
           chmod 600 android/app/key.jks
 
-      # Build APK release dengan key.jks
       - name: Build release APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -48,14 +48,12 @@ jobs:
         run: |
           flutter build apk --release
 
-      # Upload APK hasil build
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
 
-      # Hapus key dari runner setelah selesai
       - name: Remove signing key
         if: always()
         run: |

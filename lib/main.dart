@@ -164,7 +164,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Koperasi Anggota',
+      title: 'KPU Mart Lampung',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.indigo,
@@ -361,7 +361,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
 
                   const Text(
-                    'Login Anggota Koperasi',
+                    'KPU Mart Lampung',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -693,7 +693,7 @@ class _MemberDashboardState
                                       SizedBox(
                                         width:
                                             double.infinity,
-                                        height: 105,
+                                        height: 78,
 
                                         child: Image.network(
                                           'https://bwipjs-api.metafloor.com/'
@@ -737,10 +737,10 @@ class _MemberDashboardState
                                             'no_anggota'],
                                         style:
                                             const TextStyle(
-                                          fontSize: 28,
+                                          fontSize: 22,
                                           fontWeight:
                                               FontWeight.bold,
-                                          letterSpacing: 2,
+                                          letterSpacing: 1.5,
                                         ),
                                       ),
 

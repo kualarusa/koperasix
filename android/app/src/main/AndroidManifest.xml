@@ -2,7 +2,7 @@
     package="com.kpulampung.koperasi_anggota"> <!-- Tambahkan atribut package di sini -->
 
     <application
-        android:label="koperasi_anggota"
+        android:label="KPU Mart Lampung"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         
